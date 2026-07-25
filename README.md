@@ -6,7 +6,7 @@
 [![Database: PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?logo=postgresql)](https://www.postgresql.org/)
 
 **TravelTracker** — ваш персональный дневник путешествий. Отмечайте страны и города, которые посетили, следите за прогрессом, сохраняйте даты и заметки. Красивая тёмная тема, интерактивная карта и детальная статистика.
-
+(English version after Russian below)
 ---
 
 ## 📑 Содержание

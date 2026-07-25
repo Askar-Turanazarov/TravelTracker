@@ -33,12 +33,12 @@ export default function LoginPage() {
 
     const result = loginSchema.safeParse(formData)
     if (!result.success) {
-      const errors: Partial<LoginFormData> = {}
-      result.error.errors.forEach((err) => {
+      const errs: Partial<LoginFormData> = {}
+      result.error.issues.forEach((err) => {
         const field = err.path[0] as keyof LoginFormData
-        errors[field] = err.message
+        errs[field] = err.message
       })
-      setFieldErrors(errors)
+      setFieldErrors(errs)
       return
     }
 

@@ -37,12 +37,12 @@ export default function RegisterPage() {
 
     const result = registerSchema.safeParse(formData)
     if (!result.success) {
-      const errors: Partial<RegisterFormData> = {}
-      result.error.errors.forEach((err) => {
+      const errs: Partial<RegisterFormData> = {}
+      result.error.issues.forEach((err) => {
         const field = err.path[0] as keyof RegisterFormData
-        errors[field] = err.message
+        errs[field] = err.message
       })
-      setFieldErrors(errors)
+      setFieldErrors(errs)
       return
     }
 

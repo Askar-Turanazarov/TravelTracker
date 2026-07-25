@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =================== Пользователи ===================
+model User {
+  id              String    @id @default(uuid()) @db.Uuid
+  email           String    @unique @db.VarChar(255)
+  password_hash   String    @db.VarChar(60)
+  display_name    String    @db.VarChar(100)
+  role            Role      @default(traveler)
+  created_at      DateTime  @default(now()) @db.Timestamptz()
+  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz()
+
+  visited_countries VisitedCountry[]
+  visited_cities    VisitedCity[]
+  refresh_tokens    RefreshToken[]
+
+  @@map("users")
+}
+
+enum Role {
+  traveler
+  admin
+}
+
+// =================== Справочник стран ===================
+model CountryReference {
+  code          String   @id @db.Char(2)
+  name_en       String   @db.VarChar(100)
+  name_ru       String   @db.VarChar(100)
+  region        String   @db.VarChar(50)
+  centroid_lat  Decimal  @db.Decimal(9,6)
+  centroid_lng  Decimal  @db.Decimal(9,6)
+
+  cities              CityReference[]
+  visited_countries   VisitedCountry[]
+  visited_cities      VisitedCity[]
+
+  @@map("countries_reference")
+}
+
+// =================== Справочник городов ===================
+model CityReference {
+  id           Int    @id @default(autoincrement())
+  country_code String @db.Char(2)
+  name         String @db.VarChar(150)
+  latitude     Decimal @db.Decimal(9,6)
+  longitude    Decimal @db.Decimal(9,6)
+  population   Int?
+
+  country      CountryReference @relation(fields: [country_code], references: [code])
+  visited_cities VisitedCity[]
+
+  @@index([country_code])
+  @@map("cities_reference")
+}
+
+// =================== Посещённые страны ===================
+model VisitedCountry {
+  id           String   @id @default(uuid()) @db.Uuid
+  user_id      String   @db.Uuid
+  country_code String   @db.Char(2)
+  added_at     DateTime @default(now()) @db.Timestamptz()
+
+  user    User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  country CountryReference @relation(fields: [country_code], references: [code])
+
+  @@unique([user_id, country_code])
+  @@index([user_id])
+  @@map("visited_countries")
+}
+
+// =================== Посещённые города ===================
+model VisitedCity {
+  id           String   @id @default(uuid()) @db.Uuid
+  user_id      String   @db.Uuid
+  city_id      Int
+  country_code String   @db.Char(2)
+  visit_date   DateTime? @db.Date
+  note         String?   @db.VarChar(500)
+  created_at   DateTime @default(now()) @db.Timestamptz()
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz()
+
+  user    User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  city    CityReference    @relation(fields: [city_id], references: [id])
+  country CountryReference @relation(fields: [country_code], references: [code])
+
+  @@unique([user_id, city_id])
+  @@index([user_id])
+  @@index([country_code])
+  @@map("visited_cities")
+}
+
+// =================== Refresh-токены ===================
+model RefreshToken {
+  token_id   String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  token_hash String?  @db.VarChar(255)
+  revoked    Boolean  @default(false)
+  expires_at DateTime @db.Timestamptz()
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("refresh_tokens")
+}

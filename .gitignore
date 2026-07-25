@@ -1,0 +1,14 @@
+# Node
+node_modules/
+dist/
+
+# Prisma
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

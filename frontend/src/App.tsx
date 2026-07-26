@@ -7,7 +7,7 @@ import LandingPage from '@/pages/LandingPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import DashboardPage from '@/pages/DashboardPage'
-import MapPage from '@/pages/MapPage'
+import TravelMapPage from '@/pages/TravelMapPage'
 import AdminPage from '@/pages/AdminPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
@@ -27,7 +27,7 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/map" element={<MapPage />} />
+              <Route path="/map" element={<TravelMapPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Route>
           </Route>

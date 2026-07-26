@@ -2,7 +2,7 @@ import TravelMap, { type MapMarker } from '@/components/TravelMap'
 import { useMapMarkers } from '@/hooks/useMapMarkers'
 import Loader from '@/components/Loader'
 
-export default function MapPage() {
+export default function TravelMapPage() {
   const { data, isLoading } = useMapMarkers()
 
   if (isLoading) {

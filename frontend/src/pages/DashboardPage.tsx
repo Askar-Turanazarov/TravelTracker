@@ -11,101 +11,105 @@ export default function DashboardPage() {
   const navigate = useNavigate()
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-white">Дашборд</h1>
+    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+      <h1 className="text-2xl font-bold text-white">Мой тревел-дашборд</h1>
 
       {isLoading && <Loader text="Загрузка статистики..." />}
-
-      {isError && (
-        <ErrorMessage
-          message="Не удалось загрузить статистику"
-          onRetry={() => refetch()}
-        />
-      )}
+      {isError && <ErrorMessage message="Не удалось загрузить статистику" onRetry={() => refetch()} />}
 
       {data && (
         <>
-          {/* Счётчики */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card>
-              <div className="text-3xl font-bold text-primary-400">
-                {data.total_countries_visited}
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">🌍</span>
+                <div>
+                  <div className="text-2xl font-bold text-white">{data.total_countries_visited}</div>
+                  <div className="text-sm text-gray-400">стран</div>
+                </div>
               </div>
-              <div className="text-sm text-gray-400 mt-1">Посещённых стран</div>
+              <div className="w-full bg-dark-700 rounded-full h-2">
+                <div
+                  className="bg-primary-500 h-2 rounded-full"
+                  style={{ width: `${Math.min(100, (data.total_countries_visited / 195) * 100)}%` }}
+                />
+              </div>
             </Card>
             <Card>
-              <div className="text-3xl font-bold text-primary-400">
-                {data.total_cities_visited}
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">🏙️</span>
+                <div>
+                  <div className="text-2xl font-bold text-white">{data.total_cities_visited}</div>
+                  <div className="text-sm text-gray-400">городов</div>
+                </div>
               </div>
-              <div className="text-sm text-gray-400 mt-1">Посещённых городов</div>
+              <div className="w-full bg-dark-700 rounded-full h-2">
+                <div
+                  className="bg-primary-500 h-2 rounded-full"
+                  style={{ width: `${Math.min(100, (data.total_cities_visited / 100) * 100)}%` }}
+                />
+              </div>
             </Card>
             <Card>
-              <div className="text-3xl font-bold text-primary-400">
-                {data.world_percentage}%
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">✈️</span>
+                <div>
+                  <div className="text-2xl font-bold text-white">{data.world_percentage}%</div>
+                  <div className="text-sm text-gray-400">планеты</div>
+                </div>
               </div>
-              <div className="text-sm text-gray-400 mt-1">Планеты охвачено</div>
+              <div className="w-full bg-dark-700 rounded-full h-2">
+                <div
+                  className="bg-primary-500 h-2 rounded-full"
+                  style={{ width: `${data.world_percentage}%` }}
+                />
+              </div>
             </Card>
           </div>
 
-          {/* Разбивка по регионам */}
-          <Card title="По регионам">
-            {data.countries_by_region.length > 0 ? (
-              <div className="space-y-2">
-                {data.countries_by_region.map((region) => (
-                  <div
-                    key={region.region}
-                    className="flex items-center justify-between"
-                  >
-                    <span className="text-sm text-gray-300">{region.region}</span>
-                    <span className="text-sm font-medium text-white">{region.count}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">Нет данных</p>
-            )}
-          </Card>
-
-          {/* Последние посещения */}
-          <Card title="Последние посещения">
-            {data.latest_visits.length > 0 ? (
-              <div className="space-y-3">
-                {data.latest_visits.map((visit, idx) => (
-                  <div key={idx} className="flex items-center justify-between">
-                    <div>
-                      <span className="text-sm font-medium text-white">
-                        {visit.city_name}
-                      </span>
-                      <span className="text-xs text-gray-500 ml-2">
-                        {visit.country_code}
-                      </span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card title="По регионам">
+              {data.countries_by_region.length > 0 ? (
+                <div className="space-y-2">
+                  {data.countries_by_region.map((reg) => (
+                    <div key={reg.region} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-300">{reg.region}</span>
+                      <span className="font-medium text-white">{reg.count}</span>
                     </div>
-                    <span className="text-sm text-gray-400">
-                      {visit.visit_date || '—'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">Пока нет отмеченных городов</p>
-            )}
-          </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Добавьте страны, чтобы увидеть статистику</p>
+              )}
+            </Card>
+            <Card title="Последние города">
+              {data.latest_visits.length > 0 ? (
+                <div className="space-y-2">
+                  {data.latest_visits.map((v, i) => (
+                    <div key={i} className="flex justify-between text-sm">
+                      <span className="text-gray-200">
+                        {v.city_name}{' '}
+                        <span className="text-xs text-gray-500">({v.country_code})</span>
+                      </span>
+                      <span className="text-gray-400">{v.visit_date || '—'}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Нет посещённых городов</p>
+              )}
+            </Card>
+          </div>
 
-          {/* Управление странами и городами */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <CountriesManager />
             <CitiesManager />
           </div>
-
-          <div className="pt-4">
-            <button
-              onClick={() => navigate('/map')}
-              className="w-full rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 transition-colors"
-            >
-              Открыть карту
-            </button>
-          </div>
         </>
+      )}
+
+      {!data && !isLoading && !isError && (
+        <p className="text-gray-400">Добавьте свои первые страны и города, чтобы увидеть статистику!</p>
       )}
     </div>
   )

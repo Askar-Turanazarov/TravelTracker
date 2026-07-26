@@ -9,7 +9,6 @@ import {
 import api, { setRefreshTokenFn } from '@/services/api'
 import type { User, AuthTokens, LoginPayload, RegisterPayload, ApiError } from '@/types'
 
-// ======================= Типы контекста =======================
 interface AuthState {
   user: User | null
   isLoading: boolean
@@ -21,7 +20,6 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
-// ======================= Функции-помощники =======================
 function saveTokens(access: string, refresh: string) {
   localStorage.setItem('access_token', access)
   localStorage.setItem('refresh_token', refresh)
@@ -32,30 +30,23 @@ function clearTokens() {
   localStorage.removeItem('refresh_token')
 }
 
-function getRefreshToken(): string | null {
-  return localStorage.getItem('refresh_token')
-}
-
-// ======================= Провайдер =======================
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Попытка восстановить сессию при загрузке приложения
   useEffect(() => {
     const accessToken = localStorage.getItem('access_token')
     if (!accessToken) {
       setIsLoading(false)
       return
     }
-    // Пробуем запросить профиль пользователя (эндпоинт ещё не готов, пока просто парсим токен)
     try {
       const payload = JSON.parse(atob(accessToken.split('.')[1]))
       if (payload.exp * 1000 > Date.now()) {
         setUser({
           id: payload.sub,
-          email: '', // пока нет
-          display_name: '', // будет заполнено из профиля позже
+          email: '',
+          display_name: '',
           role: payload.role,
         })
       }
@@ -66,9 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Обновление access-токена (будет вызываться из api-интерсептора)
   const refreshAccessToken = useCallback(async (): Promise<string | null> => {
-    const refreshToken = getRefreshToken()
+    const refreshToken = localStorage.getItem('refresh_token')
     if (!refreshToken) return null
     try {
       const { data } = await api.post<AuthTokens>('/auth/refresh', {
@@ -83,12 +73,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Регистрируем функцию рефреша в api-клиенте
   useEffect(() => {
     setRefreshTokenFn(refreshAccessToken)
   }, [refreshAccessToken])
 
-  // ======================= Публичные методы =======================
   const login = useCallback(async (payload: LoginPayload): Promise<ApiError | null> => {
     try {
       const { data } = await api.post<{ user: User; tokens: AuthTokens }>('/auth/login', payload)
@@ -113,12 +101,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      const refreshToken = getRefreshToken()
+      const refreshToken = localStorage.getItem('refresh_token')
       if (refreshToken) {
         await api.post('/auth/logout', { refresh_token: refreshToken })
       }
     } catch {
-      // игнорируем ошибки при логауте
+      // ignore
     } finally {
       clearTokens()
       setUser(null)
@@ -141,7 +129,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
-// ======================= Хук =======================
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {

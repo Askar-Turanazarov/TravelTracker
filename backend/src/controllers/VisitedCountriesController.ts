@@ -7,11 +7,12 @@ export class VisitedCountriesController {
   async getUserCountries(req: Request, res: Response, next: NextFunction) {
     try {
       const countries = await visitedCountriesService.getUserCountries(req.user!.userId)
-      // Преобразуем ответ к формату, ожидаемому фронтендом
-      const result = countries.map(vc => ({
+      const result = countries.map((vc) => ({
         id: vc.id,
         country_code: vc.country_code,
         name_en: vc.country.name_en,
+        centroid_lat: vc.country.centroid_lat,
+        centroid_lng: vc.country.centroid_lng,
         added_at: vc.added_at.toISOString(),
       }))
       res.json({ countries: result })
@@ -28,6 +29,8 @@ export class VisitedCountriesController {
         id: record.id,
         country_code: record.country_code,
         name_en: record.country.name_en,
+        centroid_lat: record.country.centroid_lat,
+        centroid_lng: record.country.centroid_lng,
         added_at: record.added_at.toISOString(),
       })
     } catch (err) {

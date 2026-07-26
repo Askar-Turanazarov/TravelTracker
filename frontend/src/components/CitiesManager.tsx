@@ -5,8 +5,8 @@ import {
   useUpdateVisitedCity,
   useDeleteVisitedCity,
 } from '@/hooks/useVisitedCities'
-import { useCountries } from '@/hooks/useReferenceData'
-import { useCities } from '@/hooks/useReferenceData'
+import { useAddVisitedCountry } from '@/hooks/useVisitedCountries'
+import { useCountries, useCities } from '@/hooks/useReferenceData'
 import Modal from '@/components/Modal'
 import Button from '@/components/Button'
 import Loader from '@/components/Loader'
@@ -15,100 +15,87 @@ import FormField from '@/components/FormField'
 import Input from '@/components/Input'
 
 export default function CitiesManager() {
-  // ----- Фильтр по стране -----
   const [selectedCountryCode, setSelectedCountryCode] = useState('')
   const { data: countries } = useCountries()
-
-  // ----- Данные городов -----
-  const {
-    data: visitedCities,
-    isLoading,
-    isError,
-    refetch,
-  } = useVisitedCities(selectedCountryCode || undefined)
-
-  // ----- Справочник городов для выбранной страны -----
   const { data: referenceCities } = useCities(selectedCountryCode || null)
-
-  // ----- Мутации -----
-  const addMutation = useAddVisitedCity()
+  const { data: visitedCities, isLoading, isError, refetch } = useVisitedCities(selectedCountryCode || undefined)
+  const addCityMutation = useAddVisitedCity()
+  const addCountryMutation = useAddVisitedCountry()
   const updateMutation = useUpdateVisitedCity()
   const deleteMutation = useDeleteVisitedCity()
 
-  // ----- Состояния модалок -----
   const [showAddModal, setShowAddModal] = useState(false)
-  const [editNoteId, setEditNoteId] = useState<string | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
-
-  // ----- Поля формы добавления -----
   const [newCityId, setNewCityId] = useState<number | null>(null)
   const [newVisitDate, setNewVisitDate] = useState('')
   const [newNote, setNewNote] = useState('')
   const [addError, setAddError] = useState<string | null>(null)
 
-  // ----- Поля редактирования заметки -----
+  const [editNoteId, setEditNoteId] = useState<string | null>(null)
   const [editNote, setEditNote] = useState('')
   const [editVisitDate, setEditVisitDate] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
-  // ================== Добавление ==================
-  const handleAdd = (e: FormEvent) => {
+  const handleAdd = async (e: FormEvent) => {
     e.preventDefault()
-    if (newCityId === null) return
+    if (!newCityId || !selectedCountryCode) return
     setAddError(null)
 
-    addMutation.mutate(
-      {
+    try {
+      // Автоматически добавляем страну, если её ещё нет (игнорируем 409)
+      try {
+        await addCountryMutation.mutateAsync(selectedCountryCode)
+      } catch (err: any) {
+        if (err?.response?.status !== 409) throw err
+      }
+
+      // Добавляем город
+      await addCityMutation.mutateAsync({
         city_id: newCityId,
         visit_date: newVisitDate || null,
         note: newNote || null,
-      },
-      {
-        onSuccess: () => {
-          setNewCityId(null)
-          setNewVisitDate('')
-          setNewNote('')
-          setShowAddModal(false)
-        },
-        onError: (err: any) => {
-          setAddError(err?.response?.data?.error?.message || 'Ошибка добавления')
-        },
-      }
-    )
+      })
+      setNewCityId(null)
+      setNewVisitDate('')
+      setNewNote('')
+      setShowAddModal(false)
+    } catch (err: any) {
+      setAddError(err?.response?.data?.error?.message || 'Ошибка добавления города')
+    }
   }
 
-  // ================== Открытие редактирования заметки ==================
   const openEdit = (city: { id: string; note: string | null; visit_date: string | null }) => {
     setEditNoteId(city.id)
     setEditNote(city.note || '')
     setEditVisitDate(city.visit_date || '')
   }
 
-  // ================== Сохранение заметки ==================
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editNoteId) return
-    updateMutation.mutate(
-      {
+    try {
+      await updateMutation.mutateAsync({
         id: editNoteId,
         payload: {
           note: editNote || null,
           visit_date: editVisitDate || null,
         },
-      },
-      {
-        onSuccess: () => setEditNoteId(null),
-      }
-    )
+      })
+      setEditNoteId(null)
+    } catch (err: any) {
+      // ошибка обрабатывается мутацией
+    }
   }
 
-  // ================== Удаление ==================
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deleteTarget) return
-    deleteMutation.mutate(deleteTarget.id, {
-      onSuccess: () => setDeleteTarget(null),
-    })
+    try {
+      await deleteMutation.mutateAsync(deleteTarget.id)
+      setDeleteTarget(null)
+    } catch (err: any) {
+      // ошибка мутации
+    }
   }
 
-  // ================== Список доступных городов для добавления ==================
+  // Фильтруем города, оставляя только ещё не добавленные
   const addedCityIds = new Set(visitedCities?.map((c) => c.city_id) ?? [])
   const availableCities = (referenceCities ?? []).filter((c) => !addedCityIds.has(c.id))
 
@@ -116,8 +103,6 @@ export default function CitiesManager() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-white">Мои города</h2>
-
-        {/* Выбор страны */}
         <div className="flex items-center gap-2">
           <select
             className="rounded-lg border border-gray-700 bg-dark-800 text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
@@ -139,7 +124,6 @@ export default function CitiesManager() {
 
       {isLoading && <Loader size="sm" />}
       {isError && <ErrorMessage message="Не удалось загрузить города" onRetry={() => refetch()} />}
-
       {visitedCities && visitedCities.length === 0 && (
         <p className="text-sm text-gray-500">Нет отмеченных городов</p>
       )}
@@ -182,7 +166,7 @@ export default function CitiesManager() {
         </ul>
       )}
 
-      {/* Модалка добавления */}
+      {/* Модалка добавления города */}
       <Modal open={showAddModal} onClose={() => setShowAddModal(false)} title="Добавить город">
         <form onSubmit={handleAdd} className="space-y-3">
           {addError && <ErrorMessage message={addError} />}
@@ -221,7 +205,12 @@ export default function CitiesManager() {
             <Button variant="secondary" size="sm" onClick={() => setShowAddModal(false)}>
               Отмена
             </Button>
-            <Button type="submit" size="sm" loading={addMutation.isPending} disabled={!newCityId}>
+            <Button
+              type="submit"
+              size="sm"
+              loading={addCityMutation.isPending || addCountryMutation.isPending}
+              disabled={!newCityId}
+            >
               Добавить
             </Button>
           </div>
@@ -229,11 +218,7 @@ export default function CitiesManager() {
       </Modal>
 
       {/* Модалка редактирования заметки */}
-      <Modal
-        open={!!editNoteId}
-        onClose={() => setEditNoteId(null)}
-        title="Редактировать заметку"
-      >
+      <Modal open={!!editNoteId} onClose={() => setEditNoteId(null)} title="Редактировать заметку">
         <div className="space-y-3">
           <FormField label="Дата визита">
             <Input
@@ -264,11 +249,7 @@ export default function CitiesManager() {
       </Modal>
 
       {/* Модалка подтверждения удаления */}
-      <Modal
-        open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        title="Удалить город?"
-      >
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Удалить город?">
         <div className="space-y-3">
           <p className="text-sm text-gray-300">
             Удалить <strong>{deleteTarget?.name}</strong> из посещённых городов?

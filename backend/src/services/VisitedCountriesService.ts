@@ -10,7 +10,11 @@ export class VisitedCountriesService {
       where: { user_id: userId },
       include: {
         country: {
-          select: { name_en: true },
+          select: {
+            name_en: true,
+            centroid_lat: true,
+            centroid_lng: true,
+          },
         },
       },
       orderBy: { added_at: 'asc' },
@@ -19,7 +23,6 @@ export class VisitedCountriesService {
 
   // Добавить страну в посещённые
   async addCountry(userId: string, countryCode: string) {
-    // Проверить, что страна существует в справочнике
     const country = await prisma.countryReference.findUnique({
       where: { code: countryCode },
     })
@@ -27,7 +30,6 @@ export class VisitedCountriesService {
       throw new AppError(422, 'INVALID_COUNTRY_CODE', 'Страна с таким кодом не найдена')
     }
 
-    // Проверить, не добавлена ли уже
     const existing = await prisma.visitedCountry.findUnique({
       where: {
         user_id_country_code: { user_id: userId, country_code: countryCode },
@@ -44,7 +46,11 @@ export class VisitedCountriesService {
       },
       include: {
         country: {
-          select: { name_en: true },
+          select: {
+            name_en: true,
+            centroid_lat: true,
+            centroid_lng: true,
+          },
         },
       },
     })
@@ -52,9 +58,8 @@ export class VisitedCountriesService {
     return record
   }
 
-  // Удалить страну из посещённых (с каскадным удалением городов этой страны у пользователя)
+  // Удалить страну из посещённых (с каскадным удалением городов)
   async deleteCountry(userId: string, visitedCountryId: string) {
-    // Найти запись и проверить владение
     const record = await prisma.visitedCountry.findUnique({
       where: { id: visitedCountryId },
     })
@@ -65,7 +70,6 @@ export class VisitedCountriesService {
       throw new AppError(403, 'FORBIDDEN', 'Доступ запрещён')
     }
 
-    // Выполнить каскадное удаление городов в транзакции
     const [deletedCities] = await prisma.$transaction([
       prisma.visitedCity.deleteMany({
         where: {

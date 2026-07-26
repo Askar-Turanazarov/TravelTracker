@@ -1,36 +1,40 @@
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
-
 const TOTAL_COUNTRIES = 195
 
 export class DashboardService {
   async getStats(userId: string) {
-    // Запрос количества стран и городов
-    const [countryCount, cityCount] = await Promise.all([
-      prisma.visitedCountry.count({ where: { user_id: userId } }),
-      prisma.visitedCity.count({ where: { user_id: userId } }),
-    ])
+    // Количество стран
+    const countryCount = await prisma.visitedCountry.count({
+      where: { user_id: userId },
+    })
+
+    // Количество городов
+    const cityCount = await prisma.visitedCity.count({
+      where: { user_id: userId },
+    })
 
     const worldPercentage = parseFloat(((countryCount / TOTAL_COUNTRIES) * 100).toFixed(2))
 
     // Разбивка по регионам
-    const regionBreakdown = await prisma.$queryRawUnsafe<Array<{ region: string; count: bigint }>>(
-      `SELECT cr.region, COUNT(DISTINCT vc.country_code)::bigint AS count
-       FROM visited_countries vc
-       JOIN countries_reference cr ON cr.code = vc.country_code
-       WHERE vc.user_id = $1
-       GROUP BY cr.region
-       ORDER BY count DESC`,
-      userId
-    )
+    const visitedCountries = await prisma.visitedCountry.findMany({
+      where: { user_id: userId },
+      include: {
+        country: { select: { region: true } },
+      },
+    })
 
-    const countriesByRegion = regionBreakdown.map((r) => ({
-      region: r.region,
-      count: Number(r.count),
-    }))
+    const regionMap = new Map<string, number>()
+    visitedCountries.forEach((vc) => {
+      const region = vc.country.region
+      regionMap.set(region, (regionMap.get(region) || 0) + 1)
+    })
+    const countriesByRegion = Array.from(regionMap.entries())
+      .map(([region, count]) => ({ region, count }))
+      .sort((a, b) => b.count - a.count)
 
-    // Последние 5 визитов
+    // Последние 5 городов
     const latestVisits = await prisma.visitedCity.findMany({
       where: { user_id: userId },
       orderBy: { created_at: 'desc' },
@@ -39,7 +43,6 @@ export class DashboardService {
         city: { select: { name: true } },
       },
     })
-
     const latest_visits = latestVisits.map((v) => ({
       city_name: v.city.name,
       country_code: v.country_code,

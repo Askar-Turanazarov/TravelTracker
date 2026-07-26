@@ -35,22 +35,19 @@ export default function CitiesManager() {
   const [editVisitDate, setEditVisitDate] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
-  // Автоматическое добавление страны, затем города
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault()
     if (!newCityId || !selectedCountryCode) return
     setAddError(null)
 
     try {
-      // Пытаемся добавить страну
+      // Автоматически добавляем страну (409 — уже есть, продолжаем)
       try {
         await addCountryMutation.mutateAsync(selectedCountryCode)
       } catch (err: any) {
-        // 409 – страна уже есть, это нормально
         if (err?.response?.status !== 409) throw err
       }
 
-      // Добавляем город
       await addCityMutation.mutateAsync({
         city_id: newCityId,
         visit_date: newVisitDate || null,

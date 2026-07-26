@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
 import CountriesManager from '@/components/CountriesManager'
 import CitiesManager from '@/components/CitiesManager'
-import Card from '@/components/Card'
 import Loader from '@/components/Loader'
 import ErrorMessage from '@/components/ErrorMessage'
 
@@ -11,96 +10,102 @@ export default function DashboardPage() {
   const navigate = useNavigate()
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-white">Мой тревел-дашборд</h1>
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-8 animate-fade-in-up">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-3xl font-bold text-white">Мой дневник путешествий</h1>
+        <button
+          onClick={() => navigate('/map')}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-500 text-white font-medium rounded-xl
+                     shadow-lg shadow-primary-700/30 hover:shadow-primary-700/50 hover:scale-105 transition-all duration-300"
+        >
+          <span>🗺️</span> Открыть карту
+        </button>
+      </div>
 
-      {isLoading && <Loader text="Загрузка статистики..." />}
+      {isLoading && <Loader text="Загружаем статистику..." />}
       {isError && <ErrorMessage message="Не удалось загрузить статистику" onRetry={() => refetch()} />}
 
       {data && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-2xl">🌍</span>
-                <div>
-                  <div className="text-2xl font-bold text-white">{data.total_countries_visited}</div>
-                  <div className="text-sm text-gray-400">стран</div>
+          {/* Карточки статистики */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {[
+              { label: 'Стран', value: data.total_countries_visited, total: 195, icon: '🌍', color: 'from-blue-500 to-blue-700' },
+              { label: 'Городов', value: data.total_cities_visited, total: 100, icon: '🏙️', color: 'from-indigo-500 to-indigo-700' },
+              { label: 'Планеты', value: `${data.world_percentage}%`, total: 100, icon: '✈️', color: 'from-sky-500 to-sky-700' },
+            ].map((stat, idx) => (
+              <div
+                key={idx}
+                className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-dark-800 to-dark-900 p-5 shadow-lg backdrop-blur-sm transition-transform hover:-translate-y-1"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <span className="text-3xl">{stat.icon}</span>
+                  <span className="text-sm font-medium text-gray-400">{stat.label}</span>
+                </div>
+                <div className="text-4xl font-bold text-white mb-2">
+                  {stat.value}
+                </div>
+                <div className="w-full bg-dark-700 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className={`h-full bg-gradient-to-r ${stat.color} rounded-full transition-all duration-1000`}
+                    style={{ width: `${Math.min(100, (Number(stat.value) / stat.total) * 100)}%` }}
+                  />
                 </div>
               </div>
-              <div className="w-full bg-dark-700 rounded-full h-2">
-                <div
-                  className="bg-primary-500 h-2 rounded-full"
-                  style={{ width: `${Math.min(100, (data.total_countries_visited / 195) * 100)}%` }}
-                />
-              </div>
-            </Card>
-            <Card>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-2xl">🏙️</span>
-                <div>
-                  <div className="text-2xl font-bold text-white">{data.total_cities_visited}</div>
-                  <div className="text-sm text-gray-400">городов</div>
-                </div>
-              </div>
-              <div className="w-full bg-dark-700 rounded-full h-2">
-                <div
-                  className="bg-primary-500 h-2 rounded-full"
-                  style={{ width: `${Math.min(100, (data.total_cities_visited / 100) * 100)}%` }}
-                />
-              </div>
-            </Card>
-            <Card>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-2xl">✈️</span>
-                <div>
-                  <div className="text-2xl font-bold text-white">{data.world_percentage}%</div>
-                  <div className="text-sm text-gray-400">планеты</div>
-                </div>
-              </div>
-              <div className="w-full bg-dark-700 rounded-full h-2">
-                <div
-                  className="bg-primary-500 h-2 rounded-full"
-                  style={{ width: `${data.world_percentage}%` }}
-                />
-              </div>
-            </Card>
+            ))}
           </div>
 
+          {/* Регионы и последние визиты */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card title="По регионам">
+            <div className="rounded-2xl border border-white/10 bg-dark-900/80 backdrop-blur-sm p-5">
+              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <span>🌎</span> По регионам
+              </h2>
               {data.countries_by_region.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {data.countries_by_region.map((reg) => (
-                    <div key={reg.region} className="flex items-center justify-between text-sm">
-                      <span className="text-gray-300">{reg.region}</span>
-                      <span className="font-medium text-white">{reg.count}</span>
+                    <div key={reg.region} className="flex items-center justify-between">
+                      <span className="text-sm text-gray-300">{reg.region}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="w-32 bg-dark-700 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full"
+                            style={{ width: `${(reg.count / data.total_countries_visited) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-white w-6 text-right">{reg.count}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">Добавьте страны, чтобы увидеть статистику</p>
+                <p className="text-sm text-gray-500">Добавьте страны, чтобы увидеть статистику по регионам</p>
               )}
-            </Card>
-            <Card title="Последние города">
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-dark-900/80 backdrop-blur-sm p-5">
+              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <span>📌</span> Последние города
+              </h2>
               {data.latest_visits.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {data.latest_visits.map((v, i) => (
-                    <div key={i} className="flex justify-between text-sm">
-                      <span className="text-gray-200">
-                        {v.city_name}{' '}
-                        <span className="text-xs text-gray-500">({v.country_code})</span>
-                      </span>
-                      <span className="text-gray-400">{v.visit_date || '—'}</span>
+                    <div key={i} className="flex items-center justify-between py-2 border-b border-gray-800 last:border-0">
+                      <div>
+                        <span className="text-sm font-medium text-gray-200">{v.city_name}</span>
+                        <span className="text-xs text-gray-500 ml-2">{v.country_code}</span>
+                      </div>
+                      <span className="text-xs text-gray-400">{v.visit_date || '—'}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">Нет посещённых городов</p>
+                <p className="text-sm text-gray-500">Пока нет отмеченных городов</p>
               )}
-            </Card>
+            </div>
           </div>
 
+          {/* Управление странами и городами */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <CountriesManager />
             <CitiesManager />
@@ -109,7 +114,10 @@ export default function DashboardPage() {
       )}
 
       {!data && !isLoading && !isError && (
-        <p className="text-gray-400">Добавьте свои первые страны и города, чтобы увидеть статистику!</p>
+        <div className="text-center py-16 text-gray-400">
+          <p className="text-xl mb-4">🌍 Начните своё путешествие!</p>
+          <p>Добавьте первые страны и города, чтобы увидеть статистику.</p>
+        </div>
       )}
     </div>
   )

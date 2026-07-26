@@ -35,16 +35,18 @@ export default function CitiesManager() {
   const [editVisitDate, setEditVisitDate] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
 
+  // Автоматическое добавление страны, затем города
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault()
     if (!newCityId || !selectedCountryCode) return
     setAddError(null)
 
     try {
-      // Автоматически добавляем страну, если её ещё нет (игнорируем 409)
+      // Пытаемся добавить страну
       try {
         await addCountryMutation.mutateAsync(selectedCountryCode)
       } catch (err: any) {
+        // 409 – страна уже есть, это нормально
         if (err?.response?.status !== 409) throw err
       }
 
@@ -95,7 +97,6 @@ export default function CitiesManager() {
     }
   }
 
-  // Фильтруем города, оставляя только ещё не добавленные
   const addedCityIds = new Set(visitedCities?.map((c) => c.city_id) ?? [])
   const availableCities = (referenceCities ?? []).filter((c) => !addedCityIds.has(c.id))
 

@@ -5,6 +5,7 @@ import Modal from '@/components/Modal'
 import Button from '@/components/Button'
 import Loader from '@/components/Loader'
 import ErrorMessage from '@/components/ErrorMessage'
+import { countryCodeToFlagEmoji } from '@/utils/flagEmoji'
 
 export default function CountriesManager() {
   const [showAddModal, setShowAddModal] = useState(false)
@@ -55,26 +56,36 @@ export default function CountriesManager() {
       )}
 
       {visited && visited.length === 0 && !isLoading && (
-        <p className="text-sm text-gray-500">Пока не добавлено ни одной страны</p>
+        <div className="rounded-radius-lg border border-subtle bg-surface p-10 text-center">
+          <p className="text-body text-white/85">Пока не добавлено ни одной страны</p>
+          <Button size="sm" className="mt-3" onClick={() => setShowAddModal(true)}>
+            Добавить первую
+          </Button>
+        </div>
       )}
 
       {visited && visited.length > 0 && (
-        <ul className="space-y-2">
+        <div className="rounded-radius-lg border border-subtle bg-surface-elevated divide-y divide-subtle">
           {visited.map((c) => (
-            <li
+            <div
               key={c.id}
-              className="flex items-center justify-between rounded-lg border border-gray-800 bg-dark-900 px-4 py-3"
+              className="group flex items-center justify-between px-4 py-3 hover:bg-surface-hover transition-colors"
             >
-              <span className="text-sm font-medium text-gray-200">{c.name_en}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-base leading-none" role="img" aria-label={c.name_en}>
+                  {countryCodeToFlagEmoji(c.country_code)}
+                </span>
+                <span className="text-body font-medium text-white/85">{c.name_en}</span>
+              </div>
               <button
                 onClick={() => setDeleteTarget({ id: c.id, name: c.name_en })}
-                className="text-sm text-red-400 hover:text-red-300 transition-colors"
+                className="text-sm text-red-400 hover:text-red-300 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
               >
                 Удалить
               </button>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
       {/* Модалка добавления */}

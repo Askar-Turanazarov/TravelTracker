@@ -1,13 +1,40 @@
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
+import StatRing from '@/components/StatRing'
 import CountriesManager from '@/components/CountriesManager'
 import CitiesManager from '@/components/CitiesManager'
+import SegmentedControl from '@/components/SegmentedControl'
+import PassportView from '@/components/PassportView'
 import Loader from '@/components/Loader'
 import ErrorMessage from '@/components/ErrorMessage'
 
 export default function DashboardPage() {
   const { data, isLoading, isError, refetch } = useDashboardStats()
   const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState<'overview' | 'passport'>('overview')
+
+  const textGoal = useMemo(() => {
+    if (!data) return null
+    if (data.total_countries_visited === 0) {
+      return <p className="text-center text-secondary text-white/60">Добавьте первую страну</p>
+    }
+    if (data.total_countries_visited >= 195) {
+      return <p className="text-center text-secondary text-white/60">Вы посетили все страны мира!</p>
+    }
+    const rawMilestone = Math.ceil(data.world_percentage / 10) * 10
+    const nextMilestone =
+      rawMilestone === data.world_percentage
+        ? data.world_percentage + 10
+        : rawMilestone
+    const countriesNeeded =
+      Math.ceil((nextMilestone / 100) * 195) - data.total_countries_visited
+    return (
+      <p className="text-center text-secondary text-white/60">
+        Ещё {countriesNeeded} стран — и будет {nextMilestone}% мира
+      </p>
+    )
+  }, [data])
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-8 animate-fade-in-up">
@@ -22,38 +49,45 @@ export default function DashboardPage() {
         </button>
       </div>
 
+      <SegmentedControl
+        options={[
+          { label: 'Обзор', value: 'overview' },
+          { label: 'Паспорт', value: 'passport' },
+        ]}
+        value={activeTab}
+        onChange={(v) => setActiveTab(v as 'overview' | 'passport')}
+      />
+
       {isLoading && <Loader text="Загружаем статистику..." />}
       {isError && <ErrorMessage message="Не удалось загрузить статистику" onRetry={() => refetch()} />}
 
-      {data && (
+      {data && activeTab === 'overview' && (
         <>
-          {/* Карточки статистики */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            {[
-              { label: 'Стран', value: data.total_countries_visited, total: 195, icon: '🌍', color: 'from-blue-500 to-blue-700' },
-              { label: 'Городов', value: data.total_cities_visited, total: 100, icon: '🏙️', color: 'from-indigo-500 to-indigo-700' },
-              { label: 'Планеты', value: `${data.world_percentage}%`, total: 100, icon: '✈️', color: 'from-sky-500 to-sky-700' },
-            ].map((stat, idx) => (
-              <div
-                key={idx}
-                className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-dark-800 to-dark-900 p-5 shadow-lg backdrop-blur-sm transition-transform hover:-translate-y-1"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <span className="text-3xl">{stat.icon}</span>
-                  <span className="text-sm font-medium text-gray-400">{stat.label}</span>
-                </div>
-                <div className="text-4xl font-bold text-white mb-2">
-                  {stat.value}
-                </div>
-                <div className="w-full bg-dark-700 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className={`h-full bg-gradient-to-r ${stat.color} rounded-full transition-all duration-1000`}
-                    style={{ width: `${Math.min(100, (Number(stat.value) / stat.total) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+          {/* Кольца статистики */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+            <StatRing
+              value={data.total_countries_visited}
+              total={195}
+              label="Стран"
+              color="#3b82f6"
+            />
+            <StatRing
+              value={data.total_cities_visited}
+              total={100}
+              label="Городов"
+              color="#3b82f6"
+            />
+            <StatRing
+              value={data.world_percentage}
+              total={100}
+              label="Планеты"
+              color="#F5B942"
+              decimals={2}
+            />
           </div>
+
+          {/* Мотивационная строка */}
+          {textGoal}
 
           {/* Регионы и последние визиты */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -113,7 +147,9 @@ export default function DashboardPage() {
         </>
       )}
 
-      {!data && !isLoading && !isError && (
+      {activeTab === 'passport' && <PassportView />}
+
+      {!data && !isLoading && !isError && activeTab === 'overview' && (
         <div className="text-center py-16 text-gray-400">
           <p className="text-xl mb-4">🌍 Начните своё путешествие!</p>
           <p>Добавьте первые страны и города, чтобы увидеть статистику.</p>

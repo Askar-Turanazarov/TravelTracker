@@ -13,6 +13,7 @@ import Loader from '@/components/Loader'
 import ErrorMessage from '@/components/ErrorMessage'
 import FormField from '@/components/FormField'
 import Input from '@/components/Input'
+import { countryCodeToFlagEmoji } from '@/utils/flagEmoji'
 
 export default function CitiesManager() {
   const [selectedCountryCode, setSelectedCountryCode] = useState('')
@@ -123,45 +124,55 @@ export default function CitiesManager() {
       {isLoading && <Loader size="sm" />}
       {isError && <ErrorMessage message="Не удалось загрузить города" onRetry={() => refetch()} />}
       {visitedCities && visitedCities.length === 0 && (
-        <p className="text-sm text-gray-500">Нет отмеченных городов</p>
+        <div className="rounded-radius-lg border border-subtle bg-surface p-10 text-center">
+          <p className="text-body text-white/85">Нет отмеченных городов</p>
+          <Button size="sm" className="mt-3" onClick={() => setShowAddModal(true)}>
+            Добавить первый
+          </Button>
+        </div>
       )}
 
       {visitedCities && visitedCities.length > 0 && (
-        <ul className="space-y-2">
+        <div className="rounded-radius-lg border border-subtle bg-surface-elevated divide-y divide-subtle">
           {visitedCities.map((city) => (
-            <li
+            <div
               key={city.id}
-              className="flex items-start justify-between rounded-lg border border-gray-800 bg-dark-900 px-4 py-3"
+              className="group flex items-start justify-between px-4 py-3 hover:bg-surface-hover transition-colors"
             >
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-200">{city.name}</span>
-                  <span className="text-xs text-gray-500">({city.country_code})</span>
+              <div className="flex items-start gap-3">
+                <span className="text-base leading-none mt-0.5" role="img" aria-label={city.country_code}>
+                  {countryCodeToFlagEmoji(city.country_code)}
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-body font-medium text-white/85">{city.name}</span>
+                    <span className="text-secondary text-white/60">({city.country_code})</span>
+                  </div>
+                  {city.visit_date && (
+                    <p className="text-secondary text-white/60 mt-0.5">📅 {city.visit_date}</p>
+                  )}
+                  {city.note && (
+                    <p className="text-secondary text-white/60 mt-0.5 italic line-clamp-2">{city.note}</p>
+                  )}
                 </div>
-                {city.visit_date && (
-                  <p className="text-xs text-gray-400 mt-0.5">📅 {city.visit_date}</p>
-                )}
-                {city.note && (
-                  <p className="text-xs text-gray-500 mt-0.5 italic line-clamp-2">{city.note}</p>
-                )}
               </div>
               <div className="flex items-center gap-2 ml-4">
                 <button
                   onClick={() => openEdit(city)}
-                  className="text-xs text-primary-400 hover:underline"
+                  className="text-xs text-primary-400 hover:underline opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
                 >
                   Заметка
                 </button>
                 <button
                   onClick={() => setDeleteTarget({ id: city.id, name: city.name })}
-                  className="text-xs text-red-400 hover:text-red-300"
+                  className="text-xs text-red-400 hover:text-red-300 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
                 >
                   Удалить
                 </button>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
 
       {/* Модалка добавления города */}
